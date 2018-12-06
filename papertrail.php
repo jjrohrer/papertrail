@@ -230,6 +230,9 @@ class WP_Papertrail_API {
 
 
         $directories_to_skip = [];
+        #if (!isset(static::$_home_path_cached)) {
+        static::$_home_path_cached = realpath(static::get_home_path()); // don't keep calling get_home_path.  It looks expensive.
+        #}
 
         if (defined('WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS') && WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS) {
             $directories_to_skip[] = 'wp-admin'; // Future: This dir can move, so this code should account for that, but it doesn't yet.
@@ -250,7 +253,12 @@ class WP_Papertrail_API {
 
 
         $canonicalized_path_name = realpath($file);
-        $file_off_of_home = substr($canonicalized_path_name,strlen(static::$_home_path_cached));// note: this removes the starting slash
+
+        $position_at_end = strlen(static::$_home_path_cached) -1;
+        $start_slot_of_file = $position_at_end + 2;
+        $file_off_of_home = substr($canonicalized_path_name,$start_slot_of_file);// note: this removes the starting slash
+        $filenameForLog = $file_off_of_home;
+
 
         if (count(static::$excluded_filenames) > 0) {
             // Nix if the file ends with this
@@ -272,9 +280,6 @@ class WP_Papertrail_API {
             $directories_to_skip[] = $location_of_themes_dir.DIRECTORY_SEPARATOR.$dir_to_exlude;
         }
 
-        if (!isset(static::$_home_path_cached)) {
-            static::$_home_path_cached = static::get_home_path();
-        }
 
         // Nix if matches a directory that starts with this
         foreach ($directories_to_skip as $the_skippable_directory) {
@@ -289,7 +294,7 @@ class WP_Papertrail_API {
 
 
         $page_info = array(
-			'error' => sprintf( '%s | %s | %s:%s', $type, $message, $file_off_of_home, $line ),
+			'error' => sprintf( '%s:%s | %s | %s ', $filenameForLog, $line , $type, $message),
 		);
 
 		$page_info = self::get_page_info( $page_info );
