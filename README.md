@@ -50,6 +50,27 @@ define( 'WP_PAPERTRAIL_LOG_LEVEL', E_ALL & ~E_DEPRECATED );
 
 See [the PHP documentation](https://php.net/manual/en/function.error-reporting.php) for more information on this configuration option.
 
+### Exclusions
+ You can tell WP_Papertrail_API to ignore errors that happen in Wordpress, or in certain plugins or themes.  This is useful
+ when somebody is spewing messages that are beyond your control, or that you can't do anything about, such as when 
+ Wordpress throws 'Notice' messages. 
+ 
+```php
+// Don't report certain errors (TODO: 2018-12-6 - This assumes standard directory locations, which is a bad assumption)
+WP_Papertrail_API::$do_exclude_wordpress = true; // Ignore errors coming from wordpress
+
+WP_Papertrail_API::$excluded_plugin_dirs[] = 'et-appzoo-schoolchase'; // Ignore any errors coming from this plugin directory
+
+WP_Papertrail_API::$excluded_plugin_dirs[] = 'et-appzoo-schoolchase/et-appchase-xaddon-xevents/html/Lib/adodb/drivers';  // Ignore stuff in 'drivers' dir of the plugin
+WP_Papertrail_API::$excluded_themes_dirs[] = 'genesis';  // Ignore anything from the genesis theme
+
+WP_Papertrail_API::$excluded_filenames[] = 'functions.php'; // Ignore messages from _All_ files called functions.php
+WP_Papertrail_API::$excluded_filenames[] = 'jdrivers/functions.php'; // Ignore messages from _All_ files called functions.php that are in a 'drivers' directory.
+
+```
+ 
+ 
+
 ## Props
 
 Props have to go to Troy Davis (@troy on GitHub, @troyd on Twitter) who came up with the PHP interface to communicate with the Papertrail API.
