@@ -52,7 +52,13 @@ class WP_Papertrail_API {
 
 	}
 
-	/**
+	public static $excluded_filenames = [];         // List of simple filenames to exclude, such as function.php.  Hint: put leading directories for more specificity, like, 'drivers/functions.php'
+    public static $do_exclude_wordpress = false;    // Set to true to not report on wp-admin stuff
+    public static $excluded_plugin_dirs = [];       // By directory name, ignore issues in the following plugins
+    public static $excluded_themes_dirs = [];       // By directory name, ignore issues in the following themes
+
+
+    /**
 	 * Log data to Papertrail.
 	 *
 	 * @author Troy Davis from the Gist located here: https://gist.github.com/troy/2220679
@@ -189,6 +195,26 @@ class WP_Papertrail_API {
 		return isset( self::$codes[ $code ] ) ? self::$codes[ $code ] : 'unknown';
 	}
 
+    /**
+     * This is copied directory from wp-admin/includes/file.php because it isn't loaded yet in some of our cases.
+     * @return string path of this wordpress installation
+     */
+    private static $_home_path_cached;
+    static function get_home_path() {
+        $home    = set_url_scheme( get_option( 'home' ), 'http' );
+        $siteurl = set_url_scheme( get_option( 'siteurl' ), 'http' );
+        if ( ! empty( $home ) && 0 !== strcasecmp( $home, $siteurl ) ) {
+            $wp_path_rel_to_home = str_ireplace( $home, '', $siteurl ); /* $siteurl - $home */
+            $pos = strripos( str_replace( '\\', '/', $_SERVER['SCRIPT_FILENAME'] ), trailingslashit( $wp_path_rel_to_home ) );
+            $home_path = substr( $_SERVER['SCRIPT_FILENAME'], 0, $pos );
+            $home_path = trailingslashit( $home_path );
+        } else {
+            $home_path = ABSPATH;
+        }
+
+        return str_replace( '\\', '/', $home_path );
+    }
+
 	/**
 	 * Handle error logging to Papertrail
 	 *
@@ -202,8 +228,68 @@ class WP_Papertrail_API {
 
 		$type = self::stringify_error_code( $id );
 
-		$page_info = array(
-			'error' => sprintf( '%s | %s | %s:%s', $type, $message, $file, $line ),
+
+        $directories_to_skip = [];
+
+        if (static::$do_exclude_wordpress) {
+            $directories_to_skip[] = 'wp-admin'; // Future: This dir can move, so this code should account for that, but it doesn't yet.
+            $directories_to_skip[] = 'wp-includes'; // Future: This dir can move, so this code should account for that, but it doesn't yet.
+            static::$excluded_filenames[] = 'wp-activate.php';
+            static::$excluded_filenames[] = 'wp-blog-header.php';
+            static::$excluded_filenames[] = 'wp-comments-posts.php';
+            static::$excluded_filenames[] = 'wp-config.php';
+            static::$excluded_filenames[] = 'wp-cron.php';
+            static::$excluded_filenames[] = 'wp-links-opml.php';
+            static::$excluded_filenames[] = 'wp-load.php';
+            static::$excluded_filenames[] = 'wp-login.php';
+            static::$excluded_filenames[] = 'wp-mail.php';
+            static::$excluded_filenames[] = 'wp-settings.php';
+            static::$excluded_filenames[] = 'wp-trackback.php';
+            static::$excluded_filenames[] = 'xmlrpc.php';
+        }
+
+
+        $canonicalized_path_name = realpath($file);
+        $file_off_of_home = substr($canonicalized_path_name,strlen(static::$_home_path_cached));// note: this removes the starting slash
+
+        if (count(static::$excluded_filenames) > 0) {
+            // Nix if the file ends with this
+            foreach (static::$excluded_filenames as $the_ending_filename_maybe_with_some_leading_dirs) {
+                $tailOfFileOffHome = substr($file_off_of_home,strlen($file_off_of_home)- strlen($the_ending_filename_maybe_with_some_leading_dirs));
+                if ($tailOfFileOffHome  == $the_ending_filename_maybe_with_some_leading_dirs) { // does $file_off_of_home match the end of the item?
+                    return;
+                }
+            }
+        }
+
+        $location_of_plugins_dir = 'wp-content'.DIRECTORY_SEPARATOR.'plugins';// Future: make this dynamic
+        foreach (static::$excluded_plugin_dirs as $dir_to_exlude) {
+            $directories_to_skip[] = $location_of_plugins_dir.DIRECTORY_SEPARATOR.$dir_to_exlude;
+        }
+
+        $location_of_themes_dir = 'wp-content'.DIRECTORY_SEPARATOR.'themes';// Future: make this dynamic
+        foreach (static::$excluded_themes_dirs as $dir_to_exlude) {
+            $directories_to_skip[] = $location_of_themes_dir.DIRECTORY_SEPARATOR.$dir_to_exlude;
+        }
+
+        if (!isset(static::$_home_path_cached)) {
+            static::$_home_path_cached = static::get_home_path();
+        }
+
+        // Nix if matches a directory that starts with this
+        foreach ($directories_to_skip as $the_skippable_directory) {
+            if (substr($file_off_of_home,0,strlen($the_skippable_directory)) == $the_skippable_directory) {
+                return;
+            }
+        }
+
+
+
+
+
+
+        $page_info = array(
+			'error' => sprintf( '%s | %s | %s:%s', $type, $message, $file_off_of_home, $line ),
 		);
 
 		$page_info = self::get_page_info( $page_info );
@@ -213,7 +299,8 @@ class WP_Papertrail_API {
 			unset( $page_info['$_GET'] );
 		}
 
-		self::log( $page_info, 'WP_Papertrail_API/Error/' . $type );
+
+        self::log( $page_info, 'WP_Papertrail_API/Error/' . $type );
 
 	}
 
@@ -223,3 +310,4 @@ class WP_Papertrail_API {
 if ( defined( 'WP_PAPERTRAIL_ERROR_HANDLER' ) && WP_PAPERTRAIL_ERROR_HANDLER ) {
 	set_error_handler( array( 'WP_Papertrail_API', 'error_handler' ) );
 }
+
