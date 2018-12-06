@@ -231,7 +231,7 @@ class WP_Papertrail_API {
 
         $directories_to_skip = [];
 
-        if (define('WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS') && WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS) {
+        if (defined('WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS') && WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS) {
             $directories_to_skip[] = 'wp-admin'; // Future: This dir can move, so this code should account for that, but it doesn't yet.
             $directories_to_skip[] = 'wp-includes'; // Future: This dir can move, so this code should account for that, but it doesn't yet.
             static::$excluded_filenames[] = 'wp-activate.php';
