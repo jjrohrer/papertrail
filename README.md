@@ -57,7 +57,7 @@ See [the PHP documentation](https://php.net/manual/en/function.error-reporting.p
  
 ```php
 // Don't report certain errors (TODO: 2018-12-6 - This assumes standard directory locations, which is a bad assumption)
-WP_Papertrail_API::$do_exclude_wordpress = true; // Ignore errors coming from wordpress
+define('WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS',true); // Ignore errors coming from wordpress
 
 WP_Papertrail_API::$excluded_plugin_dirs[] = 'et-appzoo-schoolchase'; // Ignore any errors coming from this plugin directory
 

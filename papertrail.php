@@ -53,7 +53,7 @@ class WP_Papertrail_API {
 	}
 
 	public static $excluded_filenames = [];         // List of simple filenames to exclude, such as function.php.  Hint: put leading directories for more specificity, like, 'drivers/functions.php'
-    public static $do_exclude_wordpress = false;    // Set to true to not report on wp-admin stuff
+    #public static $do_exclude_wordpress = false;    // Set to true to not report on wp-admin stuff
     public static $excluded_plugin_dirs = [];       // By directory name, ignore issues in the following plugins
     public static $excluded_themes_dirs = [];       // By directory name, ignore issues in the following themes
 
@@ -231,7 +231,7 @@ class WP_Papertrail_API {
 
         $directories_to_skip = [];
 
-        if (static::$do_exclude_wordpress) {
+        if (define('WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS') && WP_PAPERTRAIL_DO_EXCLUDE_WORDPRESS) {
             $directories_to_skip[] = 'wp-admin'; // Future: This dir can move, so this code should account for that, but it doesn't yet.
             $directories_to_skip[] = 'wp-includes'; // Future: This dir can move, so this code should account for that, but it doesn't yet.
             static::$excluded_filenames[] = 'wp-activate.php';
