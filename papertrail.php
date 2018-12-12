@@ -55,7 +55,7 @@ class WP_Papertrail_API {
 	public static $excluded_filenames = [];         // List of simple filenames to exclude, such as function.php.  Hint: put leading directories for more specificity, like, 'drivers/functions.php'
     #public static $do_exclude_wordpress = false;    // Set to true to not report on wp-admin stuff
     public static $excluded_plugin_dirs = [];       // By directory name, ignore issues in the following plugins
-    public static $excluded_themes_dirs = [];       // By directory name, ignore issues in the following themes
+    public static $excluded_theme_dirs = [];       // By directory name, ignore issues in the following themes
 
 
     /**
@@ -276,7 +276,7 @@ class WP_Papertrail_API {
         }
 
         $location_of_themes_dir = 'wp-content'.DIRECTORY_SEPARATOR.'themes';// Future: make this dynamic
-        foreach (static::$excluded_themes_dirs as $dir_to_exlude) {
+        foreach (static::$excluded_theme_dirs as $dir_to_exlude) {
             $directories_to_skip[] = $location_of_themes_dir.DIRECTORY_SEPARATOR.$dir_to_exlude;
         }
 
